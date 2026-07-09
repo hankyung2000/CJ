@@ -113,6 +113,9 @@
   #measureLayer .measurePt{
     fill:#4fb3d9; stroke:#fff; stroke-width:2px; vector-effect:non-scaling-stroke;
   }
+  #measureLayer .measurePt.dragging{
+    fill:var(--harvest); stroke-width:3px;
+  }
 
   /* Zoom / tool controls */
   #controls{
@@ -428,23 +431,22 @@
       <button class="actionBtn" id="pinSaveBtn">저장</button>
     </div>
   </div>
-
-  <div id="settingsPanel">
-    <div class="handle"></div>
-    <h3>설정</h3>
-    <div class="settingRow">
-      <div class="settingText"><div class="settingTitle">진행 방향으로 지도 회전</div><div class="settingDesc">차량 이동 중 GPS 진행 방향이 항상 위쪽을 향하도록 지도를 회전합니다.</div></div>
-      <label class="switch"><input type="checkbox" id="headingToggle"><span class="slider"></span></label>
-    </div>
-    <div class="settingRow">
-      <div class="settingText"><div class="settingTitle">화면 꺼짐 방지</div><div class="settingDesc">지도를 보는 동안 화면이 자동으로 꺼지지 않도록 유지합니다.</div></div>
-      <label class="switch"><input type="checkbox" id="wakeLockToggle"><span class="slider"></span></label>
-    </div>
-    <button class="actionBtn" id="settingsCloseBtn" style="width:100%; margin-top:6px; background:#e7e1cd; color:var(--ink);">닫기</button>
-  </div>
 </div>
 
 <div id="overlay"></div>
+<div id="settingsPanel">
+  <div class="handle"></div>
+  <h3>설정</h3>
+  <div class="settingRow">
+    <div class="settingText"><div class="settingTitle">진행 방향으로 지도 회전</div><div class="settingDesc">차량 이동 중 GPS 진행 방향이 항상 위쪽을 향하도록 지도를 회전합니다.</div></div>
+    <label class="switch"><input type="checkbox" id="headingToggle"><span class="slider"></span></label>
+  </div>
+  <div class="settingRow">
+    <div class="settingText"><div class="settingTitle">화면 꺼짐 방지</div><div class="settingDesc">지도를 보는 동안 화면이 자동으로 꺼지지 않도록 유지합니다.</div></div>
+    <label class="switch"><input type="checkbox" id="wakeLockToggle"><span class="slider"></span></label>
+  </div>
+  <button class="actionBtn" id="settingsCloseBtn" style="width:100%; margin-top:6px; background:#e7e1cd; color:var(--ink);">닫기</button>
+</div>
 <div id="listDrawer">
   <div class="drawerHead">
     <input id="searchInput" type="text" placeholder="Plot 이름 검색 (예: A1)">
@@ -1118,6 +1120,7 @@
       if (e.target.closest && e.target.closest('#crosshair')) return;
       placeCrosshairAt(localX, localY);
     } else if (measureMode){
+      if (suppressNextMeasureClick){ suppressNextMeasureClick = false; return; }
       var ll = unproject(localX, localY);
       addMeasurePoint(ll.lon, ll.lat);
     }
@@ -1226,6 +1229,8 @@
   var measureMode = false;
   var measurePoints = []; // [{lon,lat}, ...]
   var measureEls = {ptEls:[]};
+  var draggingMeasureIdx = -1;
+  var suppressNextMeasureClick = false;
 
   function toggleMeasureMode(force){
     measureMode = (force !== undefined) ? force : !measureMode;
@@ -1261,15 +1266,54 @@
       line.setAttribute('points', pointsStr);
       measureLayer.appendChild(line);
     }
-    localPts.forEach(function(p){
+    localPts.forEach(function(p, idx){
       var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('class','measurePt');
       c.setAttribute('cx', p[0]); c.setAttribute('cy', p[1]); c.setAttribute('r', 0);
+      c.setAttribute('data-idx', idx);
+      c.style.cursor = 'grab';
+      if (idx === draggingMeasureIdx) c.classList.add('dragging');
+      c.addEventListener('mousedown', function(e){
+        e.stopPropagation();
+        draggingMeasureIdx = idx;
+        c.classList.add('dragging');
+      });
+      c.addEventListener('touchstart', function(e){
+        e.stopPropagation();
+        draggingMeasureIdx = idx;
+        c.classList.add('dragging');
+      }, {passive:true});
       measureLayer.appendChild(c);
       measureEls.ptEls.push(c);
     });
     updateMeasurePtSizes();
   }
+
+  function moveMeasurePoint(idx, clientX, clientY){
+    var pt = getSvgPoint(clientX, clientY);
+    var localX = (pt[0] - panX) / zoom;
+    var localY = (pt[1] - panY) / zoom;
+    var ll = unproject(localX, localY);
+    measurePoints[idx] = {lon: ll.lon, lat: ll.lat};
+    redrawMeasure();
+    calcMeasure();
+  }
+  window.addEventListener('mousemove', function(e){
+    if (draggingMeasureIdx < 0) return;
+    moveMeasurePoint(draggingMeasureIdx, e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', function(){
+    if (draggingMeasureIdx >= 0) suppressNextMeasureClick = true;
+    draggingMeasureIdx = -1;
+  });
+  svg.addEventListener('touchmove', function(e){
+    if (draggingMeasureIdx < 0 || e.touches.length !== 1) return;
+    moveMeasurePoint(draggingMeasureIdx, e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive:true});
+  svg.addEventListener('touchend', function(){
+    if (draggingMeasureIdx >= 0) suppressNextMeasureClick = true;
+    draggingMeasureIdx = -1;
+  });
 
   function calcMeasure(){
     if (measurePoints.length < 2){
@@ -1294,7 +1338,8 @@
       }
       area = Math.abs(area) / 2;
       var ha = area / 10000;
-      measureAreaEl.textContent = (ha >= 1 ? ha.toFixed(3) + ' ha · ' : '') + Math.round(area).toLocaleString() + ' m²';
+      var haStr = ha >= 1 ? ha.toFixed(3) : ha.toFixed(4);
+      measureAreaEl.textContent = haStr + ' ha';
     } else {
       measureAreaEl.textContent = '-';
     }
