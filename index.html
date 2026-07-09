@@ -103,8 +103,7 @@
     70%{transform:scale(2.6); opacity:0;}
     100%{transform:scale(2.6); opacity:0;}
   }
-  #gpsDotMark{fill:var(--gps-blue); stroke:#fff; stroke-width:3px; vector-effect:non-scaling-stroke;
-    filter:drop-shadow(0 0 4px rgba(46,123,214,0.9));}
+  #gpsDotMark{fill:var(--gps-blue); stroke:#fff; stroke-width:3px; vector-effect:non-scaling-stroke;}
 
   /* Pin / crosshair */
   .savedPin{cursor:pointer;}
@@ -510,19 +509,23 @@
   var panX = 0, panY = 0; // in viewBox units, offset of viewport group
   var baseVB = {x:vbX, y:vbY, w:vbW, h:vbH};
 
+  // 화면 크기(rect)는 리사이즈/초기화 시에만 다시 측정 (드래그 중 강제 리플로우 방지)
+  var cachedRect = {left:0, top:0, width:1, height:1};
+  function refreshRectCache(){
+    var rect = svg.getBoundingClientRect();
+    if (rect.width && rect.height){
+      cachedRect = {left:rect.left, top:rect.top, width:rect.width, height:rect.height};
+    }
+  }
+
   function applyTransform(){
     viewport.setAttribute('transform', 'translate(' + panX + ',' + panY + ') scale(' + zoom + ')');
     updateScaleBar();
-    updateMarkerSizes();
   }
 
-  // ---- 화면상 항상 일정한 크기로 보이도록 vb-unit 반지름 계산 ----
-  function getPxPerVbUnitBase(){
-    var rect = svg.getBoundingClientRect();
-    return rect.width / baseVB.w;
-  }
+  // ---- 화면상 항상 일정한 크기로 보이도록 vb-unit 반지름 계산 (캐시된 rect 사용) ----
   function vbSizeForScreenPx(px){
-    var base = getPxPerVbUnitBase();
+    var base = cachedRect.width / baseVB.w;
     if (!base) return 0;
     return px / (zoom * base);
   }
@@ -549,13 +552,16 @@
     panX = vbCenterX - px*zoom;
     panY = vbCenterY - py*zoom;
     applyTransform();
+    updateMarkerSizes();
   }
 
   function fitAll(){
     zoom = 1;
     panX = 0; panY = 0;
     applyTransform();
+    updateMarkerSizes();
   }
+  refreshRectCache();
   fitAll();
 
   document.getElementById('fitBtn').addEventListener('click', fitAll);
@@ -575,16 +581,16 @@
     panX = cx - px*zoom;
     panY = cy - py*zoom;
     applyTransform();
+    updateMarkerSizes();
   }
 
   // mouse drag
   var isDragging = false, lastX=0, lastY=0;
   function getSvgPoint(clientX, clientY){
-    var rect = svg.getBoundingClientRect();
-    var scaleX = baseVB.w / rect.width;
-    var scaleY = baseVB.h / rect.height;
-    var x = baseVB.x + (clientX - rect.left) * scaleX;
-    var y = baseVB.y + (clientY - rect.top) * scaleY;
+    var scaleX = baseVB.w / cachedRect.width;
+    var scaleY = baseVB.h / cachedRect.height;
+    var x = baseVB.x + (clientX - cachedRect.left) * scaleX;
+    var y = baseVB.y + (clientY - cachedRect.top) * scaleY;
     return [x,y];
   }
 
@@ -594,9 +600,8 @@
   });
   window.addEventListener('mousemove', function(e){
     if (!isDragging) return;
-    var rect = svg.getBoundingClientRect();
-    var scaleX = baseVB.w / rect.width;
-    var scaleY = baseVB.h / rect.height;
+    var scaleX = baseVB.w / cachedRect.width;
+    var scaleY = baseVB.h / cachedRect.height;
     panX += (e.clientX - lastX) * scaleX;
     panY += (e.clientY - lastY) * scaleY;
     lastX = e.clientX; lastY = e.clientY;
@@ -626,9 +631,8 @@
     if (!touchState) return;
     e.preventDefault();
     if (touchState.mode === 'pan' && e.touches.length===1){
-      var rect = svg.getBoundingClientRect();
-      var scaleX = baseVB.w / rect.width;
-      var scaleY = baseVB.h / rect.height;
+      var scaleX = baseVB.w / cachedRect.width;
+      var scaleY = baseVB.h / cachedRect.height;
       var dx = (e.touches[0].clientX - touchState.x) * scaleX;
       var dy = (e.touches[0].clientY - touchState.y) * scaleY;
       panX += dx; panY += dy;
@@ -660,10 +664,8 @@
 
   // scale bar: approximate meters per degree lat ~111320
   function updateScaleBar(){
-    var rect = svg.getBoundingClientRect();
-    var pxPerVbUnit = rect.width / baseVB.w * zoom; // px per viewBox unit (x, which is lon*cosLat)
+    var pxPerVbUnit = cachedRect.width / baseVB.w * zoom; // px per viewBox unit (x, which is lon*cosLat)
     // 1 viewBox x unit = 1 degree-lon-equivalent (already *cosLat) => real meters per deg lon = 111320*cosLat
-    var metersPerVbUnit = 111320 * cosLat / cosLat; // simplifies: vb x unit already includes cosLat scaling so meters per vb-x-unit = 111320
     var metersPerVbUnitX = 111320; // since x = (lon-minx)*cosLat (degrees*cosLat), and meters/deg-lon = 111320*cosLat, so meters per vb-unit = 111320*cosLat / cosLat = 111320
     var pxPerMeter = pxPerVbUnit / metersPerVbUnitX;
     var targetPx = 60;
@@ -681,7 +683,11 @@
     if (f < 1.5) nf = 1; else if (f < 3.5) nf = 2; else if (f < 7.5) nf = 5; else nf = 10;
     return nf * Math.pow(10, exp);
   }
-  window.addEventListener('resize', updateScaleBar);
+  window.addEventListener('resize', function(){
+    refreshRectCache();
+    updateScaleBar();
+    updateMarkerSizes();
+  });
 
   // ---- GPS ----
   var gpsMarker = document.getElementById('gpsMarker');
@@ -1031,7 +1037,7 @@
   searchInput.addEventListener('input', function(){ renderList(searchInput.value); });
 
   // initial fit after layout settles
-  setTimeout(function(){ updateScaleBar(); updateMarkerSizes(); }, 100);
+  setTimeout(function(){ refreshRectCache(); updateScaleBar(); updateMarkerSizes(); }, 100);
 
   // ---- PWA: Service Worker 등록 (오프라인 지원) ----
   if ('serviceWorker' in navigator) {
