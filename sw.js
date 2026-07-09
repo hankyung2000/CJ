@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cj-cambodia-farm-map-v1';
+const CACHE_NAME = 'cj-cambodia-farm-map-v2';
 const ASSETS = [
   './',
   './index.html',

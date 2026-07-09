@@ -30,6 +30,7 @@
     --ink:#20241a;
     --muted:#6b6a5c;
     --gps-blue:#2e7bd6;
+    --pin-red:#e0432f;
     --danger:#b5432f;
     --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
@@ -40,33 +41,33 @@
 
   /* Top bar */
   #topbar{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 14px;
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px;
     background:var(--soil-900);
     border-bottom:1px solid var(--field-700);
     z-index:20;
   }
   #topbar .title{
-    color:var(--cream); font-weight:700; font-size:15px; letter-spacing:0.02em;
-    display:flex; flex-direction:column; line-height:1.15;
+    color:var(--cream); font-weight:800; font-size:19px; letter-spacing:0.02em;
+    display:flex; flex-direction:column; line-height:1.2;
   }
   #topbar .title small{
-    color:var(--muted); font-weight:500; font-size:10.5px; font-family:var(--mono);
+    color:var(--muted); font-weight:600; font-size:12px; font-family:var(--mono);
     letter-spacing:0.03em;
   }
   #gpsStatus{
     margin-left:auto;
-    display:flex;align-items:center;gap:6px;
-    font-family:var(--mono); font-size:11px; color:var(--muted);
-    padding:5px 10px; border-radius:20px; background:var(--soil-800);
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--mono); font-size:13.5px; color:var(--muted);
+    padding:8px 14px; border-radius:24px; background:var(--soil-800);
     border:1px solid var(--field-700);
     white-space:nowrap;
   }
-  #gpsDot{width:7px;height:7px;border-radius:50%;background:var(--danger);flex:none;transition:background .3s;}
-  #gpsDot.active{background:#4caf6f; box-shadow:0 0 0 3px rgba(76,175,111,0.25);}
+  #gpsDot{width:11px;height:11px;border-radius:50%;background:var(--danger);flex:none;transition:background .3s;}
+  #gpsDot.active{background:#4caf6f; box-shadow:0 0 0 4px rgba(76,175,111,0.28);}
   #listBtn{
     background:var(--soil-800); border:1px solid var(--field-700); color:var(--cream);
-    width:36px;height:36px;border-radius:8px; font-size:16px; flex:none;
+    width:52px;height:52px;border-radius:12px; font-size:24px; flex:none;
     display:flex;align-items:center;justify-content:center; cursor:pointer;
   }
 
@@ -76,6 +77,7 @@
   }
   #mapSvg{width:100%;height:100%;display:block;touch-action:none; cursor:grab;}
   #mapSvg.dragging{cursor:grabbing;}
+  #mapSvg.pinMode{cursor:crosshair;}
   .plot{
     fill:var(--plot-fill); stroke:var(--plot-line); stroke-width:0.00003;
     transition:fill .15s;
@@ -86,73 +88,141 @@
 
   /* GPS marker */
   #gpsMarker{display:none;}
-  #gpsAccuracy{fill:var(--gps-blue); fill-opacity:0.15; stroke:var(--gps-blue); stroke-opacity:0.4; stroke-width:0.00002;}
-  #gpsDotMark{fill:var(--gps-blue); stroke:#fff; stroke-width:0.00002;}
+  #gpsAccuracy{fill:var(--gps-blue); fill-opacity:0.13; stroke:var(--gps-blue); stroke-opacity:0.35; stroke-width:0.00002;}
+  #gpsPulse{
+    fill:var(--gps-blue); fill-opacity:0.55; transform-box:fill-box; transform-origin:center;
+    animation:gpsPulseAnim 1.8s ease-out infinite;
+  }
+  #gpsPulse2{
+    fill:var(--gps-blue); fill-opacity:0.55; transform-box:fill-box; transform-origin:center;
+    animation:gpsPulseAnim 1.8s ease-out infinite;
+    animation-delay:0.6s;
+  }
+  @keyframes gpsPulseAnim{
+    0%{transform:scale(0.5); opacity:0.65;}
+    70%{transform:scale(2.6); opacity:0;}
+    100%{transform:scale(2.6); opacity:0;}
+  }
+  #gpsDotMark{fill:var(--gps-blue); stroke:#fff; stroke-width:3px; vector-effect:non-scaling-stroke;
+    filter:drop-shadow(0 0 4px rgba(46,123,214,0.9));}
 
-  /* Zoom controls */
+  /* Pin / crosshair */
+  .savedPin{cursor:pointer;}
+  .savedPin .pinBody{fill:var(--pin-red); stroke:#fff; stroke-width:2.5px; vector-effect:non-scaling-stroke;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5));}
+  .savedPin .pinDot{fill:#fff;}
+  #crosshair{cursor:grab;}
+  #crosshair.dragging{cursor:grabbing;}
+  #crosshair line{stroke:var(--harvest); vector-effect:non-scaling-stroke; stroke-width:3px;}
+  #crosshair circle{fill:none; stroke:var(--harvest); vector-effect:non-scaling-stroke; stroke-width:3px;}
+
+  /* Zoom / tool controls */
   #controls{
-    position:absolute; right:12px; bottom:22px; z-index:15;
-    display:flex; flex-direction:column; gap:8px;
+    position:absolute; right:14px; bottom:26px; z-index:15;
+    display:flex; flex-direction:column; gap:10px;
   }
   .ctrlBtn{
-    width:46px;height:46px; border-radius:10px;
-    background:rgba(31,35,24,0.92); border:1px solid var(--field-700);
-    color:var(--cream); font-size:20px; font-weight:600;
+    width:60px;height:60px; border-radius:14px;
+    background:rgba(31,35,24,0.94); border:1px solid var(--field-700);
+    color:var(--cream); font-size:26px; font-weight:700;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
     cursor:pointer; user-select:none;
   }
+  .ctrlBtn svg{width:28px;height:28px;}
   .ctrlBtn:active{background:var(--field-700);}
   #locateBtn.active{color:var(--gps-blue); border-color:var(--gps-blue);}
+  #pinModeBtn.active{color:var(--harvest); border-color:var(--harvest);}
+  #fitBtn{font-size:14px;}
 
   /* scale bar */
   #scaleBar{
-    position:absolute; left:12px; bottom:16px; z-index:15;
-    color:var(--cream); font-family:var(--mono); font-size:11px;
-    background:rgba(31,35,24,0.8); padding:5px 9px; border-radius:6px;
+    position:absolute; left:14px; bottom:20px; z-index:15;
+    color:var(--cream); font-family:var(--mono); font-size:13px;
+    background:rgba(31,35,24,0.82); padding:7px 12px; border-radius:8px;
     border:1px solid var(--field-700);
-    display:flex; align-items:center; gap:6px;
+    display:flex; align-items:center; gap:8px;
   }
-  #scaleBarLine{height:3px; background:var(--cream); width:60px;}
+  #scaleBarLine{height:4px; background:var(--cream); width:60px;}
 
   /* Bottom info sheet */
   #infoSheet{
     position:absolute; left:0; right:0; bottom:0; z-index:25;
     background:var(--paper);
-    border-radius:16px 16px 0 0;
+    border-radius:20px 20px 0 0;
     box-shadow:0 -6px 24px rgba(0,0,0,0.4);
     transform:translateY(100%);
     transition:transform .25s ease;
-    padding:16px 18px calc(18px + env(safe-area-inset-bottom));
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
   }
   #infoSheet.open{transform:translateY(0);}
   #infoSheet .handle{
-    width:36px;height:4px;background:#d8d2bd;border-radius:2px;margin:0 auto 12px;
+    width:40px;height:5px;background:#d8d2bd;border-radius:3px;margin:0 auto 14px;
   }
   #infoSheet .plotName{
-    font-size:22px; font-weight:800; color:var(--ink); font-family:var(--mono);
+    font-size:26px; font-weight:800; color:var(--ink); font-family:var(--mono);
     letter-spacing:0.02em;
   }
   #infoSheet .row{
     display:flex; justify-content:space-between; align-items:baseline;
-    padding:9px 0; border-bottom:1px solid #e7e1cd;
+    padding:12px 0; border-bottom:1px solid #e7e1cd;
   }
   #infoSheet .row:last-of-type{border-bottom:none;}
-  #infoSheet .row .label{color:var(--muted); font-size:13px;}
-  #infoSheet .row .value{color:var(--ink); font-size:15px; font-weight:600; font-family:var(--mono);}
+  #infoSheet .row .label{color:var(--muted); font-size:15px;}
+  #infoSheet .row .value{color:var(--ink); font-size:17px; font-weight:700; font-family:var(--mono);}
   #infoSheet .cropNote{
-    margin-top:10px; padding:10px 12px; background:#efe9d5; border-radius:8px;
-    font-size:12.5px; color:var(--muted); line-height:1.5;
+    margin-top:12px; padding:12px 14px; background:#efe9d5; border-radius:10px;
+    font-size:14px; color:var(--muted); line-height:1.55;
   }
   #closeSheet{
-    position:absolute; top:14px; right:14px;
-    width:28px;height:28px;border-radius:50%; background:#efe9d5; border:none;
-    color:var(--muted); font-size:15px; cursor:pointer;
+    position:absolute; top:16px; right:16px;
+    width:36px;height:36px;border-radius:50%; background:#efe9d5; border:none;
+    color:var(--muted); font-size:18px; cursor:pointer;
   }
+
+  /* Pin popup */
+  #pinSheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:27;
+    background:var(--paper);
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 24px rgba(0,0,0,0.4);
+    transform:translateY(100%);
+    transition:transform .25s ease;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+  }
+  #pinSheet.open{transform:translateY(0);}
+  #pinSheet .handle{
+    width:40px;height:5px;background:#d8d2bd;border-radius:3px;margin:0 auto 14px;
+  }
+  #pinSheet h3{margin:0 0 12px; font-size:18px; color:var(--ink); font-weight:800;}
+  #pinLabelInput{
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid #d8d2bd;
+    font-size:16px; margin-bottom:12px; background:#fff; color:var(--ink);
+  }
+  #pinSheet .row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:10px 0; border-bottom:1px solid #e7e1cd;
+  }
+  #pinSheet .row .label{color:var(--muted); font-size:14px;}
+  #pinSheet .row .value{color:var(--ink); font-size:16px; font-weight:700; font-family:var(--mono);}
+  #pinSheet .btnRow{display:flex; gap:10px; margin-top:16px;}
+  #pinSheet button.actionBtn{
+    flex:1; padding:14px; border-radius:12px; border:none; font-size:16px; font-weight:700;
+    cursor:pointer;
+  }
+  #pinSaveBtn{background:var(--harvest); color:#fff;}
+  #pinCancelBtn{background:#e7e1cd; color:var(--ink);}
+  #pinHint{
+    position:absolute; top:70px; left:50%; transform:translateX(-50%);
+    background:rgba(31,35,24,0.94); color:var(--cream); padding:10px 18px;
+    border-radius:24px; font-size:14px; z-index:22; white-space:nowrap;
+    border:1px solid var(--harvest); display:none;
+  }
+  #pinHint.show{display:block;}
 
   /* Plot list drawer */
   #listDrawer{
-    position:fixed; top:0; right:0; bottom:0; width:min(320px, 84vw);
+    position:fixed; top:0; right:0; bottom:0; width:min(360px, 88vw);
     background:var(--paper); z-index:30;
     transform:translateX(100%); transition:transform .22s ease;
     display:flex; flex-direction:column;
@@ -160,22 +230,41 @@
   }
   #listDrawer.open{transform:translateX(0);}
   #listDrawer .drawerHead{
-    padding:14px 16px 10px; border-bottom:1px solid #e7e1cd;
-    display:flex; align-items:center; gap:8px;
+    padding:16px 18px 12px; border-bottom:1px solid #e7e1cd;
+    display:flex; align-items:center; gap:10px;
   }
   #searchInput{
-    flex:1; padding:9px 12px; border-radius:8px; border:1px solid #d8d2bd;
-    font-size:14px; font-family:var(--mono); background:#fff;
+    flex:1; padding:12px 14px; border-radius:10px; border:1px solid #d8d2bd;
+    font-size:16px; font-family:var(--mono); background:#fff;
   }
-  #drawerClose{background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:4px 8px;}
-  #plotListItems{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  #drawerClose{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;padding:6px 10px;}
+  #drawerTabs{display:flex; border-bottom:1px solid #e7e1cd;}
+  #drawerTabs .tab{
+    flex:1; text-align:center; padding:12px 8px; font-size:14.5px; font-weight:700;
+    color:var(--muted); cursor:pointer; border-bottom:3px solid transparent;
+  }
+  #drawerTabs .tab.active{color:var(--ink); border-bottom-color:var(--harvest);}
+  #plotListItems, #pinListItems{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  #pinListItems{display:none;}
   .plotListItem{
-    padding:11px 16px; border-bottom:1px solid #efe9d5;
+    padding:14px 18px; border-bottom:1px solid #efe9d5;
     display:flex; justify-content:space-between; align-items:center;
-    cursor:pointer; font-family:var(--mono); font-size:13.5px; color:var(--ink);
+    cursor:pointer; font-family:var(--mono); font-size:15.5px; color:var(--ink);
   }
   .plotListItem:active{background:#efe9d5;}
-  .plotListItem .area{color:var(--muted); font-size:12px;}
+  .plotListItem .area{color:var(--muted); font-size:13.5px;}
+  .pinListItem{
+    padding:14px 18px; border-bottom:1px solid #efe9d5;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    font-family:var(--mono); font-size:15px; color:var(--ink);
+  }
+  .pinListItem .pinInfo{flex:1; cursor:pointer;}
+  .pinListItem .pinInfo .pinCoord{color:var(--muted); font-size:12.5px; margin-top:3px;}
+  .pinListItem .pinDelete{
+    width:34px;height:34px;border-radius:50%; background:#efe9d5; border:none;
+    color:var(--danger); font-size:16px; cursor:pointer; flex:none;
+  }
+  #pinListEmpty{padding:24px 18px; color:var(--muted); font-size:14px; text-align:center; display:none;}
   #overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:28;
     opacity:0; pointer-events:none; transition:opacity .2s;
@@ -183,9 +272,9 @@
   #overlay.open{opacity:1; pointer-events:auto;}
 
   #toast{
-    position:absolute; top:64px; left:50%; transform:translateX(-50%) translateY(-10px);
-    background:rgba(31,35,24,0.95); color:var(--cream); padding:8px 16px;
-    border-radius:20px; font-size:12.5px; z-index:26; opacity:0; transition:all .25s;
+    position:absolute; top:76px; left:50%; transform:translateX(-50%) translateY(-10px);
+    background:rgba(31,35,24,0.95); color:var(--cream); padding:10px 20px;
+    border-radius:24px; font-size:14px; z-index:26; opacity:0; transition:all .25s;
     pointer-events:none; white-space:nowrap; border:1px solid var(--field-700);
   }
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
@@ -203,20 +292,32 @@
     <svg id="mapSvg" preserveAspectRatio="xMidYMid meet">
       <g id="viewport">
         <g id="plotsLayer"></g>
+        <g id="pinsLayer"></g>
         <g id="gpsMarker">
           <circle id="gpsAccuracy" cx="0" cy="0" r="0"></circle>
-          <circle id="gpsDotMark" cx="0" cy="0" r="0.00006"></circle>
+          <circle id="gpsPulse" cx="0" cy="0" r="0"></circle>
+          <circle id="gpsPulse2" cx="0" cy="0" r="0"></circle>
+          <circle id="gpsDotMark" cx="0" cy="0" r="0"></circle>
+        </g>
+        <g id="crosshair" style="display:none;">
+          <line id="chLineH" x1="0" y1="0" x2="0" y2="0"></line>
+          <line id="chLineV" x1="0" y1="0" x2="0" y2="0"></line>
+          <circle id="chCircle" cx="0" cy="0" r="0"></circle>
         </g>
       </g>
     </svg>
 
+    <div id="pinHint">지도를 눌러 위치를 표시하세요</div>
     <div id="scaleBar"><div id="scaleBarLine"></div><span id="scaleLabel">--</span></div>
 
     <div id="controls">
       <div class="ctrlBtn" id="zoomIn">+</div>
       <div class="ctrlBtn" id="zoomOut">&#8722;</div>
+      <div class="ctrlBtn" id="pinModeBtn" title="좌표 찍기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>
+      </div>
       <div class="ctrlBtn" id="locateBtn" title="내 위치로 이동">&#9678;</div>
-      <div class="ctrlBtn" id="fitBtn" title="전체 보기" style="font-size:13px;">전체</div>
+      <div class="ctrlBtn" id="fitBtn" title="전체 보기">전체</div>
     </div>
 
     <div id="toast"></div>
@@ -230,6 +331,18 @@
     <div class="row"><span class="label">중심좌표 (UTM 48P)</span><span class="value" id="sheetCoord">-</span></div>
     <div class="cropNote">작물 정보는 아직 등록되지 않았습니다. 작물 구역 레이어를 추가하면 이 곳에 재배 작물, 파종일 등 정보가 표시됩니다.</div>
   </div>
+
+  <div id="pinSheet">
+    <div class="handle"></div>
+    <h3>위치 저장</h3>
+    <input id="pinLabelInput" type="text" placeholder="이름 입력 (예: 관정 위치, 창고 등)">
+    <div class="row"><span class="label">UTM 48P</span><span class="value" id="pinUtm">-</span></div>
+    <div class="row"><span class="label">위도, 경도</span><span class="value" id="pinLatLon">-</span></div>
+    <div class="btnRow">
+      <button class="actionBtn" id="pinCancelBtn">취소</button>
+      <button class="actionBtn" id="pinSaveBtn">저장</button>
+    </div>
+  </div>
 </div>
 
 <div id="overlay"></div>
@@ -238,7 +351,13 @@
     <input id="searchInput" type="text" placeholder="Plot 이름 검색 (예: A1)">
     <button id="drawerClose">&#10005;</button>
   </div>
+  <div id="drawerTabs">
+    <div class="tab active" id="tabPlots">Plot 목록</div>
+    <div class="tab" id="tabPins">저장된 위치</div>
+  </div>
   <div id="plotListItems"></div>
+  <div id="pinListItems"></div>
+  <div id="pinListEmpty">아직 저장된 위치가 없습니다.<br>지도에서 <b>&#10021; 좌표 찍기</b> 버튼을 눌러 추가해보세요.</div>
 </div>
 
 <script id="plotDataScript" type="application/json">
@@ -394,6 +513,33 @@
   function applyTransform(){
     viewport.setAttribute('transform', 'translate(' + panX + ',' + panY + ') scale(' + zoom + ')');
     updateScaleBar();
+    updateMarkerSizes();
+  }
+
+  // ---- 화면상 항상 일정한 크기로 보이도록 vb-unit 반지름 계산 ----
+  function getPxPerVbUnitBase(){
+    var rect = svg.getBoundingClientRect();
+    return rect.width / baseVB.w;
+  }
+  function vbSizeForScreenPx(px){
+    var base = getPxPerVbUnitBase();
+    if (!base) return 0;
+    return px / (zoom * base);
+  }
+  function updateMarkerSizes(){
+    var dotR = vbSizeForScreenPx(10);
+    document.getElementById('gpsDotMark').setAttribute('r', dotR);
+    document.getElementById('gpsPulse').setAttribute('r', dotR);
+    document.getElementById('gpsPulse2').setAttribute('r', dotR);
+    var chArm = vbSizeForScreenPx(20);
+    var chR = vbSizeForScreenPx(22);
+    var chLineH = document.getElementById('chLineH');
+    var chLineV = document.getElementById('chLineV');
+    var chCircle = document.getElementById('chCircle');
+    chLineH.setAttribute('x1', -chArm); chLineH.setAttribute('x2', chArm);
+    chLineV.setAttribute('y1', -chArm); chLineV.setAttribute('y2', chArm);
+    chCircle.setAttribute('r', chR);
+    updateSavedPinSizes();
   }
 
   function centerOn(px, py, z){
@@ -559,10 +705,7 @@
     var xy = project(lon, lat);
     lastGpsXY = xy;
     gpsMarker.style.display = 'block';
-    gpsDotMark.setAttribute('cx', xy[0]);
-    gpsDotMark.setAttribute('cy', xy[1]);
-    gpsAccuracy.setAttribute('cx', xy[0]);
-    gpsAccuracy.setAttribute('cy', xy[1]);
+    gpsMarker.setAttribute('transform', 'translate(' + xy[0] + ',' + xy[1] + ')');
     var accDeg = acc / 111320; // meters to degrees approx
     gpsAccuracy.setAttribute('r', accDeg);
     gpsDot.classList.add('active');
@@ -605,13 +748,211 @@
   svg.addEventListener('mousedown', function(){ followGps=false; locateBtn.classList.remove('active'); });
   svg.addEventListener('touchstart', function(){ followGps=false; locateBtn.classList.remove('active'); });
 
-  // ---- Plot list drawer ----
+  // ---- 좌표 찍기 (핀 모드) ----
+  var crosshair = document.getElementById('crosshair');
+  var pinsLayer = document.getElementById('pinsLayer');
+  var pinModeBtn = document.getElementById('pinModeBtn');
+  var pinHint = document.getElementById('pinHint');
+  var pinSheet = document.getElementById('pinSheet');
+  var pinLabelInput = document.getElementById('pinLabelInput');
+  var pinUtmEl = document.getElementById('pinUtm');
+  var pinLatLonEl = document.getElementById('pinLatLon');
+  var pinSaveBtn = document.getElementById('pinSaveBtn');
+  var pinCancelBtn = document.getElementById('pinCancelBtn');
+
+  var pinMode = false;       // 좌표 찍기 모드 on/off
+  var placingPin = false;    // 크로스헤어가 화면에 떠 있는 중
+  var draggingCrosshair = false;
+  var crosshairLocal = {x:0, y:0}; // viewport(local) 좌표
+  var STORAGE_KEY = 'cj_cambodia_saved_pins_v1';
+  var savedPins = loadPins();
+
+  function loadPins(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function persistPins(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPins)); }catch(e){}
+  }
+
+  function unproject(localX, localY){
+    var lon = localX / cosLat + bbox.minx;
+    var lat = bbox.maxy - localY;
+    return {lon:lon, lat:lat};
+  }
+
+  function togglePinMode(force){
+    pinMode = (force !== undefined) ? force : !pinMode;
+    pinModeBtn.classList.toggle('active', pinMode);
+    svg.classList.toggle('pinMode', pinMode);
+    pinHint.classList.toggle('show', pinMode && !placingPin);
+    if (!pinMode) cancelPlacing();
+  }
+  pinModeBtn.addEventListener('click', function(){ togglePinMode(); });
+
+  function updatePinPopupCoords(){
+    var ll = unproject(crosshairLocal.x, crosshairLocal.y);
+    pinUtmEl.textContent = formatUTM(ll.lat, ll.lon);
+    pinLatLonEl.textContent = ll.lat.toFixed(6) + ', ' + ll.lon.toFixed(6);
+  }
+
+  function placeCrosshairAt(localX, localY){
+    crosshairLocal.x = localX; crosshairLocal.y = localY;
+    crosshair.setAttribute('transform', 'translate(' + localX + ',' + localY + ')');
+    crosshair.style.display = 'block';
+    placingPin = true;
+    pinHint.classList.remove('show');
+    pinLabelInput.value = '핀 ' + (savedPins.length + 1);
+    updatePinPopupCoords();
+    pinSheet.classList.add('open');
+  }
+
+  function cancelPlacing(){
+    placingPin = false;
+    crosshair.style.display = 'none';
+    pinSheet.classList.remove('open');
+  }
+
+  pinCancelBtn.addEventListener('click', function(){
+    cancelPlacing();
+  });
+
+  pinSaveBtn.addEventListener('click', function(){
+    var ll = unproject(crosshairLocal.x, crosshairLocal.y);
+    var label = pinLabelInput.value.trim() || ('핀 ' + (savedPins.length + 1));
+    var pin = {
+      id: 'pin_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+      label: label,
+      lon: ll.lon,
+      lat: ll.lat
+    };
+    savedPins.push(pin);
+    persistPins();
+    renderSavedPinMarker(pin);
+    cancelPlacing();
+    togglePinMode(false);
+    showToast('저장했습니다: ' + label);
+  });
+
+  // 지도 클릭 -> 핀 모드일 때만 크로스헤어 배치 (plot 클릭보다 우선, plot 선택은 차단)
+  svg.addEventListener('click', function(e){
+    if (!pinMode) return;
+    e.stopPropagation();
+    if (placingPin) return;
+    if (e.target.closest && e.target.closest('#crosshair')) return;
+    var pt = getSvgPoint(e.clientX, e.clientY);
+    var localX = (pt[0] - panX) / zoom;
+    var localY = (pt[1] - panY) / zoom;
+    placeCrosshairAt(localX, localY);
+  }, true);
+
+  // 크로스헤어 드래그로 정밀 조정 (마우스)
+  crosshair.addEventListener('mousedown', function(e){
+    e.stopPropagation();
+    draggingCrosshair = true;
+    crosshair.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', function(e){
+    if (!draggingCrosshair) return;
+    var pt = getSvgPoint(e.clientX, e.clientY);
+    var localX = (pt[0] - panX) / zoom;
+    var localY = (pt[1] - panY) / zoom;
+    crosshairLocal.x = localX; crosshairLocal.y = localY;
+    crosshair.setAttribute('transform', 'translate(' + localX + ',' + localY + ')');
+    updatePinPopupCoords();
+  });
+  window.addEventListener('mouseup', function(){
+    if (draggingCrosshair){ draggingCrosshair = false; crosshair.classList.remove('dragging'); }
+  });
+
+  // 크로스헤어 드래그 (터치)
+  crosshair.addEventListener('touchstart', function(e){
+    e.stopPropagation();
+    draggingCrosshair = true;
+    crosshair.classList.add('dragging');
+  }, {passive:true});
+  svg.addEventListener('touchmove', function(e){
+    if (!draggingCrosshair || e.touches.length !== 1) return;
+    var pt = getSvgPoint(e.touches[0].clientX, e.touches[0].clientY);
+    var localX = (pt[0] - panX) / zoom;
+    var localY = (pt[1] - panY) / zoom;
+    crosshairLocal.x = localX; crosshairLocal.y = localY;
+    crosshair.setAttribute('transform', 'translate(' + localX + ',' + localY + ')');
+    updatePinPopupCoords();
+  }, {passive:true});
+  svg.addEventListener('touchend', function(){
+    if (draggingCrosshair){ draggingCrosshair = false; crosshair.classList.remove('dragging'); }
+  });
+
+  // ---- 저장된 핀 지도 표시 ----
+  var pinMarkerEls = {};
+  function pinIconPath(){
+    // 물방울(핀) 모양 경로, 로컬 기준 (0,0)이 뾰족한 끝 지점)
+    return 'M0,0 C -0.55,-0.62 -1,-1.05 -1,-1.7 A 1,1 0 1 1 1,-1.7 C 1,-1.05 0.55,-0.62 0,0 Z';
+  }
+  function renderSavedPinMarker(pin){
+    var xy = project(pin.lon, pin.lat);
+    var g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','savedPin');
+    g.setAttribute('data-id', pin.id);
+    g.setAttribute('transform', 'translate(' + xy[0] + ',' + xy[1] + ') scale(1)');
+    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('class','pinBody');
+    path.setAttribute('d', pinIconPath());
+    var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('class','pinDot');
+    dot.setAttribute('cx','0'); dot.setAttribute('cy','-1.7'); dot.setAttribute('r','0.32');
+    g.appendChild(path);
+    g.appendChild(dot);
+    g.addEventListener('click', function(e){
+      e.stopPropagation();
+      var ll = {lon:pin.lon, lat:pin.lat};
+      sheetName.textContent = pin.label;
+      sheetArea.textContent = '-';
+      sheetCoord.textContent = formatUTM(ll.lat, ll.lon);
+      document.querySelector('#infoSheet .cropNote').textContent = '저장된 위치입니다. Plot 목록 > 저장된 위치 탭에서 삭제할 수 있어요.';
+      infoSheet.classList.add('open');
+    });
+    pinsLayer.appendChild(g);
+    pinMarkerEls[pin.id] = g;
+    updateSavedPinSizes();
+  }
+  function updateSavedPinSizes(){
+    var s = vbSizeForScreenPx(11); // 핀 아이콘 스케일 기준값
+    for (var id in pinMarkerEls){
+      var g = pinMarkerEls[id];
+      var tf = g.getAttribute('transform');
+      var m = /translate\(([^,]+),([^)]+)\)/.exec(tf);
+      if (m){
+        g.setAttribute('transform', 'translate(' + m[1] + ',' + m[2] + ') scale(' + s + ')');
+      }
+    }
+  }
+  function removePin(id){
+    savedPins = savedPins.filter(function(p){ return p.id !== id; });
+    persistPins();
+    if (pinMarkerEls[id]){
+      pinMarkerEls[id].remove();
+      delete pinMarkerEls[id];
+    }
+  }
+  // 초기 로드: 저장된 핀 전부 그리기
+  savedPins.forEach(renderSavedPinMarker);
+
+  // ---- Plot / 저장된 위치 목록 드로어 (탭) ----
   var listBtn = document.getElementById('listBtn');
   var listDrawer = document.getElementById('listDrawer');
   var overlay = document.getElementById('overlay');
   var drawerClose = document.getElementById('drawerClose');
   var plotListItems = document.getElementById('plotListItems');
+  var pinListItemsEl = document.getElementById('pinListItems');
+  var pinListEmpty = document.getElementById('pinListEmpty');
   var searchInput = document.getElementById('searchInput');
+  var tabPlots = document.getElementById('tabPlots');
+  var tabPins = document.getElementById('tabPins');
+  var activeTab = 'plots';
 
   function renderList(filter){
     plotListItems.innerHTML = '';
@@ -632,10 +973,53 @@
     }
   }
 
+  function renderPinList(){
+    pinListItemsEl.innerHTML = '';
+    pinListEmpty.style.display = savedPins.length ? 'none' : 'block';
+    savedPins.forEach(function(pin){
+      var item = document.createElement('div');
+      item.className = 'pinListItem';
+      var info = document.createElement('div');
+      info.className = 'pinInfo';
+      info.innerHTML = '<div>' + pin.label + '</div><div class="pinCoord">' + formatUTM(pin.lat, pin.lon) + '</div>';
+      info.addEventListener('click', function(){
+        var xy = project(pin.lon, pin.lat);
+        centerOn(xy[0], xy[1], Math.max(zoom, 8));
+        closeDrawer();
+      });
+      var delBtn = document.createElement('button');
+      delBtn.className = 'pinDelete';
+      delBtn.innerHTML = '&#10005;';
+      delBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        if (confirm(pin.label + ' 위치를 삭제할까요?')){
+          removePin(pin.id);
+          renderPinList();
+        }
+      });
+      item.appendChild(info);
+      item.appendChild(delBtn);
+      pinListItemsEl.appendChild(item);
+    });
+  }
+
+  function switchTab(tab){
+    activeTab = tab;
+    tabPlots.classList.toggle('active', tab==='plots');
+    tabPins.classList.toggle('active', tab==='pins');
+    plotListItems.style.display = tab==='plots' ? 'block' : 'none';
+    pinListItemsEl.style.display = tab==='pins' ? 'block' : 'none';
+    searchInput.style.display = tab==='plots' ? 'block' : 'none';
+    if (tab==='pins'){ renderPinList(); }
+  }
+  tabPlots.addEventListener('click', function(){ switchTab('plots'); });
+  tabPins.addEventListener('click', function(){ switchTab('pins'); });
+
   function openDrawer(){
     listDrawer.classList.add('open');
     overlay.classList.add('open');
     renderList(searchInput.value);
+    switchTab(activeTab);
   }
   function closeDrawer(){
     listDrawer.classList.remove('open');
@@ -647,7 +1031,7 @@
   searchInput.addEventListener('input', function(){ renderList(searchInput.value); });
 
   // initial fit after layout settles
-  setTimeout(function(){ updateScaleBar(); }, 100);
+  setTimeout(function(){ updateScaleBar(); updateMarkerSizes(); }, 100);
 
   // ---- PWA: Service Worker 등록 (오프라인 지원) ----
   if ('serviceWorker' in navigator) {
