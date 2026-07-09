@@ -65,7 +65,7 @@
   }
   #gpsDot{width:11px;height:11px;border-radius:50%;background:var(--danger);flex:none;transition:background .3s;}
   #gpsDot.active{background:#4caf6f; box-shadow:0 0 0 4px rgba(76,175,111,0.28);}
-  #listBtn{
+  #listBtn, #settingsBtn{
     background:var(--soil-800); border:1px solid var(--field-700); color:var(--cream);
     width:52px;height:52px;border-radius:12px; font-size:24px; flex:none;
     display:flex;align-items:center;justify-content:center; cursor:pointer;
@@ -77,7 +77,8 @@
   }
   #mapSvg{width:100%;height:100%;display:block;touch-action:none; cursor:grab;}
   #mapSvg.dragging{cursor:grabbing;}
-  #mapSvg.pinMode{cursor:crosshair;}
+  #mapSvg.pinMode, #mapSvg.measureMode{cursor:crosshair;}
+  #rotator{transition:transform .25s ease-out;}
   .plot{
     fill:var(--plot-fill); stroke:var(--plot-line); stroke-width:0.00003;
     transition:fill .15s;
@@ -89,20 +90,8 @@
   /* GPS marker */
   #gpsMarker{display:none;}
   #gpsAccuracy{fill:var(--gps-blue); fill-opacity:0.13; stroke:var(--gps-blue); stroke-opacity:0.35; stroke-width:0.00002;}
-  #gpsPulse{
-    fill:var(--gps-blue); fill-opacity:0.55; transform-box:fill-box; transform-origin:center;
-    animation:gpsPulseAnim 1.8s ease-out infinite;
-  }
-  #gpsPulse2{
-    fill:var(--gps-blue); fill-opacity:0.55; transform-box:fill-box; transform-origin:center;
-    animation:gpsPulseAnim 1.8s ease-out infinite;
-    animation-delay:0.6s;
-  }
-  @keyframes gpsPulseAnim{
-    0%{transform:scale(0.5); opacity:0.65;}
-    70%{transform:scale(2.6); opacity:0;}
-    100%{transform:scale(2.6); opacity:0;}
-  }
+  #gpsPulse{fill:var(--gps-blue);}
+  #gpsPulse2{fill:var(--gps-blue);}
   #gpsDotMark{fill:var(--gps-blue); stroke:#fff; stroke-width:3px; vector-effect:non-scaling-stroke;}
 
   /* Pin / crosshair */
@@ -114,6 +103,17 @@
   #crosshair.dragging{cursor:grabbing;}
   #crosshair line{stroke:var(--harvest); vector-effect:non-scaling-stroke; stroke-width:3px;}
   #crosshair circle{fill:none; stroke:var(--harvest); vector-effect:non-scaling-stroke; stroke-width:3px;}
+
+  /* Measure tool */
+  #measureLayer .measurePoly{
+    fill:#4fb3d9; fill-opacity:0.18; stroke:#4fb3d9; stroke-width:2.5px; vector-effect:non-scaling-stroke;
+  }
+  #measureLayer .measureLine{
+    fill:none; stroke:#4fb3d9; stroke-width:2.5px; vector-effect:non-scaling-stroke; stroke-dasharray:2 6; stroke-linecap:round;
+  }
+  #measureLayer .measurePt{
+    fill:#4fb3d9; stroke:#fff; stroke-width:2px; vector-effect:non-scaling-stroke;
+  }
 
   /* Zoom / tool controls */
   #controls{
@@ -132,6 +132,7 @@
   .ctrlBtn:active{background:var(--field-700);}
   #locateBtn.active{color:var(--gps-blue); border-color:var(--gps-blue);}
   #pinModeBtn.active{color:var(--harvest); border-color:var(--harvest);}
+  #measureModeBtn.active{color:#4fb3d9; border-color:#4fb3d9;}
   #fitBtn{font-size:14px;}
 
   /* scale bar */
@@ -205,7 +206,7 @@
   #pinSheet .row .label{color:var(--muted); font-size:14px;}
   #pinSheet .row .value{color:var(--ink); font-size:16px; font-weight:700; font-family:var(--mono);}
   #pinSheet .btnRow{display:flex; gap:10px; margin-top:16px;}
-  #pinSheet button.actionBtn{
+  .actionBtn{
     flex:1; padding:14px; border-radius:12px; border:none; font-size:16px; font-weight:700;
     cursor:pointer;
   }
@@ -218,6 +219,60 @@
     border:1px solid var(--harvest); display:none;
   }
   #pinHint.show{display:block;}
+  #measureHint{
+    position:absolute; top:70px; left:50%; transform:translateX(-50%);
+    background:rgba(31,35,24,0.94); color:var(--cream); padding:10px 18px;
+    border-radius:24px; font-size:14px; z-index:22; white-space:nowrap;
+    border:1px solid #4fb3d9; display:none;
+  }
+  #measureHint.show{display:block;}
+
+  /* Measure panel */
+  #measurePanel{
+    position:absolute; left:14px; right:14px; top:70px; z-index:22;
+    background:rgba(31,35,24,0.94); border:1px solid #4fb3d9; border-radius:16px;
+    padding:14px 16px; display:none;
+  }
+  #measurePanel.show{display:block;}
+  #measurePanel .mRow{display:flex; justify-content:space-between; padding:5px 0;}
+  #measurePanel .mLabel{color:var(--muted); font-size:13.5px;}
+  #measurePanel .mValue{color:var(--cream); font-size:16px; font-weight:700; font-family:var(--mono);}
+  #measurePanel .btnRow{display:flex; gap:8px; margin-top:10px;}
+  #measurePanel .actionBtn{padding:10px; font-size:13.5px; background:#3d4a2e; color:var(--cream);}
+  #measureCloseBtn{background:#4fb3d9 !important; color:#fff !important;}
+
+  /* Settings panel */
+  #settingsPanel{
+    position:absolute; left:0; right:0; bottom:0; z-index:29;
+    background:var(--paper);
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 24px rgba(0,0,0,0.4);
+    transform:translateY(100%);
+    transition:transform .25s ease;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+  }
+  #settingsPanel.open{transform:translateY(0);}
+  #settingsPanel .handle{
+    width:40px;height:5px;background:#d8d2bd;border-radius:3px;margin:0 auto 14px;
+  }
+  #settingsPanel h3{margin:0 0 14px; font-size:18px; color:var(--ink); font-weight:800;}
+  .settingRow{
+    display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid #e7e1cd;
+  }
+  .settingText{flex:1;}
+  .settingTitle{font-size:16px; font-weight:700; color:var(--ink); margin-bottom:4px;}
+  .settingDesc{font-size:13px; color:var(--muted); line-height:1.5;}
+  .switch{position:relative; display:inline-block; width:52px; height:30px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .slider{
+    position:absolute; cursor:pointer; inset:0; background:#d8d2bd; border-radius:30px; transition:.2s;
+  }
+  .switch .slider:before{
+    content:""; position:absolute; height:24px; width:24px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch input:checked + .slider{background:var(--harvest);}
+  .switch input:checked + .slider:before{transform:translateX(22px);}
 
   /* Plot list drawer */
   #listDrawer{
@@ -284,29 +339,50 @@
   <div id="topbar">
     <div class="title">CJ CAMBODIA<small>PLOT 경계 · UTM 48P · 오프라인</small></div>
     <div id="gpsStatus"><span id="gpsDot"></span><span id="gpsText">GPS 대기중</span></div>
+    <button id="settingsBtn" title="설정">&#9881;</button>
     <button id="listBtn" title="Plot 목록">&#9776;</button>
   </div>
 
   <div id="mapWrap">
     <svg id="mapSvg" preserveAspectRatio="xMidYMid meet">
-      <g id="viewport">
-        <g id="plotsLayer"></g>
-        <g id="pinsLayer"></g>
-        <g id="gpsMarker">
-          <circle id="gpsAccuracy" cx="0" cy="0" r="0"></circle>
-          <circle id="gpsPulse" cx="0" cy="0" r="0"></circle>
-          <circle id="gpsPulse2" cx="0" cy="0" r="0"></circle>
-          <circle id="gpsDotMark" cx="0" cy="0" r="0"></circle>
-        </g>
-        <g id="crosshair" style="display:none;">
-          <line id="chLineH" x1="0" y1="0" x2="0" y2="0"></line>
-          <line id="chLineV" x1="0" y1="0" x2="0" y2="0"></line>
-          <circle id="chCircle" cx="0" cy="0" r="0"></circle>
+      <g id="rotator">
+        <g id="viewport">
+          <g id="plotsLayer"></g>
+          <g id="pinsLayer"></g>
+          <g id="measureLayer"></g>
+          <g id="gpsMarker">
+            <circle id="gpsAccuracy" cx="0" cy="0" r="0"></circle>
+            <circle id="gpsPulse" cx="0" cy="0" r="0" fill-opacity="0.55">
+              <animate attributeName="r" id="gpsPulseAnimR" values="0;0" dur="1.8s" repeatCount="indefinite"></animate>
+              <animate attributeName="fill-opacity" values="0.6;0" dur="1.8s" repeatCount="indefinite"></animate>
+            </circle>
+            <circle id="gpsPulse2" cx="0" cy="0" r="0" fill-opacity="0.55">
+              <animate attributeName="r" id="gpsPulseAnimR2" values="0;0" dur="1.8s" begin="0.9s" repeatCount="indefinite"></animate>
+              <animate attributeName="fill-opacity" values="0.6;0" dur="1.8s" begin="0.9s" repeatCount="indefinite"></animate>
+            </circle>
+            <circle id="gpsDotMark" cx="0" cy="0" r="0"></circle>
+            <path id="gpsHeadingArrow" d="" fill="var(--gps-blue)" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none;"></path>
+          </g>
+          <g id="crosshair" style="display:none;">
+            <line id="chLineH" x1="0" y1="0" x2="0" y2="0"></line>
+            <line id="chLineV" x1="0" y1="0" x2="0" y2="0"></line>
+            <circle id="chCircle" cx="0" cy="0" r="0"></circle>
+          </g>
         </g>
       </g>
     </svg>
 
     <div id="pinHint">지도를 눌러 위치를 표시하세요</div>
+    <div id="measureHint">지도를 눌러 지점을 추가하세요</div>
+    <div id="measurePanel">
+      <div class="mRow"><span class="mLabel">거리</span><span class="mValue" id="measureDist">0 m</span></div>
+      <div class="mRow"><span class="mLabel">면적</span><span class="mValue" id="measureArea">-</span></div>
+      <div class="btnRow">
+        <button class="actionBtn" id="measureUndoBtn">되돌리기</button>
+        <button class="actionBtn" id="measureClearBtn">초기화</button>
+        <button class="actionBtn" id="measureCloseBtn">닫기</button>
+      </div>
+    </div>
     <div id="scaleBar"><div id="scaleBarLine"></div><span id="scaleLabel">--</span></div>
 
     <div id="controls">
@@ -314,6 +390,9 @@
       <div class="ctrlBtn" id="zoomOut">&#8722;</div>
       <div class="ctrlBtn" id="pinModeBtn" title="좌표 찍기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>
+      </div>
+      <div class="ctrlBtn" id="measureModeBtn" title="면적/거리 측정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16 L8 21 L21 8 L16 3 Z"></path><line x1="13.5" y1="5.5" x2="16" y2="8"></line><line x1="10" y1="9" x2="12" y2="11"></line><line x1="6.5" y1="12.5" x2="9" y2="15"></line></svg>
       </div>
       <div class="ctrlBtn" id="locateBtn" title="내 위치로 이동">&#9678;</div>
       <div class="ctrlBtn" id="fitBtn" title="전체 보기">전체</div>
@@ -341,6 +420,20 @@
       <button class="actionBtn" id="pinCancelBtn">취소</button>
       <button class="actionBtn" id="pinSaveBtn">저장</button>
     </div>
+  </div>
+
+  <div id="settingsPanel">
+    <div class="handle"></div>
+    <h3>설정</h3>
+    <div class="settingRow">
+      <div class="settingText"><div class="settingTitle">진행 방향으로 지도 회전</div><div class="settingDesc">차량 이동 중 GPS 진행 방향이 항상 위쪽을 향하도록 지도를 회전합니다.</div></div>
+      <label class="switch"><input type="checkbox" id="headingToggle"><span class="slider"></span></label>
+    </div>
+    <div class="settingRow">
+      <div class="settingText"><div class="settingTitle">화면 꺼짐 방지</div><div class="settingDesc">지도를 보는 동안 화면이 자동으로 꺼지지 않도록 유지합니다.</div></div>
+      <label class="switch"><input type="checkbox" id="wakeLockToggle"><span class="slider"></span></label>
+    </div>
+    <button class="actionBtn" id="settingsCloseBtn" style="width:100%; margin-top:6px; background:#e7e1cd; color:var(--ink);">닫기</button>
   </div>
 </div>
 
@@ -543,6 +636,9 @@
     chLineV.setAttribute('y1', -chArm); chLineV.setAttribute('y2', chArm);
     chCircle.setAttribute('r', chR);
     updateSavedPinSizes();
+    updateHeadingArrow();
+    updateMeasurePtSizes();
+    updateGpsPulseAnim();
   }
 
   function centerOn(px, py, z){
@@ -693,17 +789,57 @@
   var gpsMarker = document.getElementById('gpsMarker');
   var gpsAccuracy = document.getElementById('gpsAccuracy');
   var gpsDotMark = document.getElementById('gpsDotMark');
+  var gpsHeadingArrow = document.getElementById('gpsHeadingArrow');
   var gpsDot = document.getElementById('gpsDot');
   var gpsText = document.getElementById('gpsText');
   var locateBtn = document.getElementById('locateBtn');
+  var rotator = document.getElementById('rotator');
   var lastGpsXY = null;
   var followGps = false;
+  var headingMode = false;
+  var currentHeading = null; // degrees, 0 = north, clockwise
 
   function showToast(msg){
     var t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  function applyRotation(){
+    if (headingMode && currentHeading != null){
+      var cx = baseVB.x + baseVB.w/2;
+      var cy = baseVB.y + baseVB.h/2;
+      rotator.setAttribute('transform', 'rotate(' + (-currentHeading) + ',' + cx + ',' + cy + ')');
+    } else {
+      rotator.removeAttribute('transform');
+    }
+  }
+
+  function updateHeadingArrow(){
+    if (!gpsHeadingArrow) return;
+    if (currentHeading == null){
+      gpsHeadingArrow.style.display = 'none';
+      return;
+    }
+    var s = vbSizeForScreenPx(9);
+    var d = 'M0,' + (-s*1.7).toFixed(6) +
+      ' L' + (s*0.95).toFixed(6) + ',' + (s*0.85).toFixed(6) +
+      ' L0,' + (s*0.35).toFixed(6) +
+      ' L' + (-s*0.95).toFixed(6) + ',' + (s*0.85).toFixed(6) + ' Z';
+    gpsHeadingArrow.setAttribute('d', d);
+    var rotateDeg = headingMode ? 0 : currentHeading;
+    gpsHeadingArrow.setAttribute('transform', 'rotate(' + rotateDeg + ')');
+    gpsHeadingArrow.style.display = 'block';
+  }
+
+  function updateGpsPulseAnim(){
+    var base = vbSizeForScreenPx(10);
+    var big = base * 2.6;
+    var a1 = document.getElementById('gpsPulseAnimR');
+    var a2 = document.getElementById('gpsPulseAnimR2');
+    if (a1) a1.setAttribute('values', base + ';' + big);
+    if (a2) a2.setAttribute('values', base + ';' + big);
   }
 
   function onPosition(pos){
@@ -716,6 +852,11 @@
     gpsAccuracy.setAttribute('r', accDeg);
     gpsDot.classList.add('active');
     gpsText.textContent = formatUTMShort(lat, lon) + ' ±' + Math.round(acc) + 'm';
+    if (pos.coords.heading != null && !isNaN(pos.coords.heading)){
+      currentHeading = pos.coords.heading;
+    }
+    applyRotation();
+    updateHeadingArrow();
     if (followGps){
       centerOn(xy[0], xy[1], Math.max(zoom, 4));
     }
@@ -748,11 +889,84 @@
       showToast('GPS 신호를 기다리는 중...');
     } else {
       showToast('내 위치 추적 꺼짐');
+      headingMode = false;
+      headingToggleEl.checked = false;
+      applyRotation();
+      updateHeadingArrow();
     }
   });
   // manual pan/pinch should break follow mode
   svg.addEventListener('mousedown', function(){ followGps=false; locateBtn.classList.remove('active'); });
   svg.addEventListener('touchstart', function(){ followGps=false; locateBtn.classList.remove('active'); });
+
+  // ---- 설정: 진행 방향 회전 / 화면 꺼짐 방지 ----
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsPanel = document.getElementById('settingsPanel');
+  var settingsCloseBtn = document.getElementById('settingsCloseBtn');
+  var headingToggleEl = document.getElementById('headingToggle');
+  var wakeLockToggleEl = document.getElementById('wakeLockToggle');
+  var wakeLock = null;
+  var wakeLockEnabled = false;
+
+  function openSettings(){
+    closeDrawer();
+    settingsPanel.classList.add('open');
+    overlay.classList.add('open');
+  }
+  function closeSettings(){
+    settingsPanel.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+  settingsBtn.addEventListener('click', openSettings);
+  settingsCloseBtn.addEventListener('click', closeSettings);
+
+  headingToggleEl.addEventListener('change', function(){
+    headingMode = headingToggleEl.checked;
+    if (headingMode){
+      followGps = true;
+      locateBtn.classList.add('active');
+      if (lastGpsXY) centerOn(lastGpsXY[0], lastGpsXY[1], Math.max(zoom, 6));
+      showToast('진행 방향 회전 켜짐 (이동 중에만 방향이 반영돼요)');
+    } else {
+      showToast('진행 방향 회전 꺼짐');
+    }
+    applyRotation();
+    updateHeadingArrow();
+  });
+
+  async function requestWakeLock(){
+    if (!('wakeLock' in navigator)) return false;
+    try{
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', function(){ wakeLock = null; });
+      return true;
+    }catch(e){
+      wakeLock = null;
+      return false;
+    }
+  }
+  wakeLockToggleEl.addEventListener('change', function(){
+    wakeLockEnabled = wakeLockToggleEl.checked;
+    if (wakeLockEnabled){
+      requestWakeLock().then(function(ok){
+        if (!ok){
+          showToast('이 기기/브라우저에서는 지원되지 않아요');
+          wakeLockToggleEl.checked = false;
+          wakeLockEnabled = false;
+        } else {
+          showToast('화면 꺼짐 방지 켜짐');
+        }
+      });
+    } else {
+      if (wakeLock){ wakeLock.release(); wakeLock = null; }
+      showToast('화면 꺼짐 방지 꺼짐');
+    }
+  });
+  document.addEventListener('visibilitychange', function(){
+    if (wakeLockEnabled && document.visibilityState === 'visible' && !wakeLock){
+      requestWakeLock();
+    }
+  });
 
   // ---- 좌표 찍기 (핀 모드) ----
   var crosshair = document.getElementById('crosshair');
@@ -791,6 +1005,7 @@
 
   function togglePinMode(force){
     pinMode = (force !== undefined) ? force : !pinMode;
+    if (pinMode) toggleMeasureMode(false);
     pinModeBtn.classList.toggle('active', pinMode);
     svg.classList.toggle('pinMode', pinMode);
     pinHint.classList.toggle('show', pinMode && !placingPin);
@@ -842,16 +1057,21 @@
     showToast('저장했습니다: ' + label);
   });
 
-  // 지도 클릭 -> 핀 모드일 때만 크로스헤어 배치 (plot 클릭보다 우선, plot 선택은 차단)
+  // 지도 클릭 -> 핀 모드 또는 측정 모드일 때 처리 (plot 클릭보다 우선, plot 선택은 차단)
   svg.addEventListener('click', function(e){
-    if (!pinMode) return;
+    if (!pinMode && !measureMode) return;
     e.stopPropagation();
-    if (placingPin) return;
-    if (e.target.closest && e.target.closest('#crosshair')) return;
     var pt = getSvgPoint(e.clientX, e.clientY);
     var localX = (pt[0] - panX) / zoom;
     var localY = (pt[1] - panY) / zoom;
-    placeCrosshairAt(localX, localY);
+    if (pinMode){
+      if (placingPin) return;
+      if (e.target.closest && e.target.closest('#crosshair')) return;
+      placeCrosshairAt(localX, localY);
+    } else if (measureMode){
+      var ll = unproject(localX, localY);
+      addMeasurePoint(ll.lon, ll.lat);
+    }
   }, true);
 
   // 크로스헤어 드래그로 정밀 조정 (마우스)
@@ -947,6 +1167,121 @@
   // 초기 로드: 저장된 핀 전부 그리기
   savedPins.forEach(renderSavedPinMarker);
 
+  // ---- 면적/거리 측정 도구 ----
+  var measureLayer = document.getElementById('measureLayer');
+  var measureModeBtn = document.getElementById('measureModeBtn');
+  var measureHint = document.getElementById('measureHint');
+  var measurePanel = document.getElementById('measurePanel');
+  var measureDistEl = document.getElementById('measureDist');
+  var measureAreaEl = document.getElementById('measureArea');
+  var measureMode = false;
+  var measurePoints = []; // [{lon,lat}, ...]
+  var measureEls = {ptEls:[]};
+
+  function toggleMeasureMode(force){
+    measureMode = (force !== undefined) ? force : !measureMode;
+    if (measureMode) togglePinMode(false);
+    measureModeBtn.classList.toggle('active', measureMode);
+    svg.classList.toggle('measureMode', measureMode);
+    measureHint.classList.toggle('show', measureMode && measurePoints.length===0);
+    measurePanel.classList.toggle('show', measureMode && measurePoints.length>0);
+  }
+  measureModeBtn.addEventListener('click', function(){ toggleMeasureMode(); });
+
+  function updateMeasurePtSizes(){
+    if (!measureEls || !measureEls.ptEls) return;
+    var r = vbSizeForScreenPx(7);
+    measureEls.ptEls.forEach(function(c){ c.setAttribute('r', r); });
+  }
+
+  function redrawMeasure(){
+    measureLayer.innerHTML = '';
+    measureEls.ptEls = [];
+    if (measurePoints.length === 0) return;
+    var localPts = measurePoints.map(function(p){ return project(p.lon, p.lat); });
+    var pointsStr = localPts.map(function(p){ return p[0] + ',' + p[1]; }).join(' ');
+    if (measurePoints.length >= 3){
+      var poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      poly.setAttribute('class','measurePoly');
+      poly.setAttribute('points', pointsStr);
+      measureLayer.appendChild(poly);
+    }
+    if (measurePoints.length >= 2){
+      var line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+      line.setAttribute('class','measureLine');
+      line.setAttribute('points', pointsStr);
+      measureLayer.appendChild(line);
+    }
+    localPts.forEach(function(p){
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('class','measurePt');
+      c.setAttribute('cx', p[0]); c.setAttribute('cy', p[1]); c.setAttribute('r', 0);
+      measureLayer.appendChild(c);
+      measureEls.ptEls.push(c);
+    });
+    updateMeasurePtSizes();
+  }
+
+  function calcMeasure(){
+    if (measurePoints.length < 2){
+      measureDistEl.textContent = '0 m';
+      measureAreaEl.textContent = '-';
+      return;
+    }
+    var utmPts = measurePoints.map(function(p){ return latLonToUTM(p.lat, p.lon); });
+    var dist = 0;
+    for (var i=1;i<utmPts.length;i++){
+      var dx = utmPts[i].easting - utmPts[i-1].easting;
+      var dy = utmPts[i].northing - utmPts[i-1].northing;
+      dist += Math.sqrt(dx*dx+dy*dy);
+    }
+    measureDistEl.textContent = dist >= 1000 ? (dist/1000).toFixed(2) + ' km' : Math.round(dist) + ' m';
+    if (utmPts.length >= 3){
+      var area = 0;
+      for (var j=0;j<utmPts.length;j++){
+        var k = (j+1) % utmPts.length;
+        area += utmPts[j].easting * utmPts[k].northing;
+        area -= utmPts[k].easting * utmPts[j].northing;
+      }
+      area = Math.abs(area) / 2;
+      var ha = area / 10000;
+      measureAreaEl.textContent = (ha >= 1 ? ha.toFixed(3) + ' ha · ' : '') + Math.round(area).toLocaleString() + ' m²';
+    } else {
+      measureAreaEl.textContent = '-';
+    }
+  }
+
+  function addMeasurePoint(lon, lat){
+    measurePoints.push({lon:lon, lat:lat});
+    redrawMeasure();
+    calcMeasure();
+    measureHint.classList.remove('show');
+    measurePanel.classList.add('show');
+  }
+
+  document.getElementById('measureUndoBtn').addEventListener('click', function(){
+    measurePoints.pop();
+    redrawMeasure();
+    calcMeasure();
+    if (measurePoints.length === 0){
+      measurePanel.classList.remove('show');
+      measureHint.classList.toggle('show', measureMode);
+    }
+  });
+  document.getElementById('measureClearBtn').addEventListener('click', function(){
+    measurePoints = [];
+    redrawMeasure();
+    calcMeasure();
+    measurePanel.classList.remove('show');
+    measureHint.classList.toggle('show', measureMode);
+  });
+  document.getElementById('measureCloseBtn').addEventListener('click', function(){
+    measurePoints = [];
+    redrawMeasure();
+    measurePanel.classList.remove('show');
+    toggleMeasureMode(false);
+  });
+
   // ---- Plot / 저장된 위치 목록 드로어 (탭) ----
   var listBtn = document.getElementById('listBtn');
   var listDrawer = document.getElementById('listDrawer');
@@ -1022,6 +1357,7 @@
   tabPins.addEventListener('click', function(){ switchTab('pins'); });
 
   function openDrawer(){
+    closeSettings();
     listDrawer.classList.add('open');
     overlay.classList.add('open');
     renderList(searchInput.value);
@@ -1033,7 +1369,7 @@
   }
   listBtn.addEventListener('click', openDrawer);
   drawerClose.addEventListener('click', closeDrawer);
-  overlay.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', function(){ closeDrawer(); closeSettings(); });
   searchInput.addEventListener('input', function(){ renderList(searchInput.value); });
 
   // initial fit after layout settles
